@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProfileRole {
+  MASTER
+  ADMIN
+  USER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  NOT_SPECIFIED
+}
+
+enum Subscriber {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+model Doctor {
+  id           Int           @id @default(autoincrement())
+  name         String
+  email        String        @unique
+  password     String
+  profileRole  ProfileRole   @default(ADMIN)
+  subscriber   Subscriber    @default(BRONZE)
+  token        String        @unique
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  patients     Patient[]     @relation("DoctorPatients")
+  appointments Appointment[]
+
+  @@index([email])
+  @@map("doctors")
+}
+
+model Patient {
+  id            Int           @id @default(autoincrement())
+  name          String
+  email         String?       @unique
+  age           Int
+  height        Float
+  weight        Float
+  gender        Gender        @default(NOT_SPECIFIED)
+  profileRole   ProfileRole   @default(USER)
+  levelActivity Boolean       @default(true)
+  token         String        @unique
+  doctor        Doctor        @relation("DoctorPatients", fields: [doctorId], references: [id])
+  doctorId      Int
+  appointments  Appointment[]
+
+  @@index([email])
+  @@map("patients")
+}
+
+model Appointment {
+  id        Int      @id @default(autoincrement())
+  patient   Patient  @relation(fields: [patientId], references: [id])
+  patientId Int
+  doctor    Doctor   @relation(fields: [doctorId], references: [id])
+  doctorId  Int
+  date      DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([patientId, doctorId, date])
+  @@map("appointments")
+}
